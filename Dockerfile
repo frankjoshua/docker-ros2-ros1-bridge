@@ -1,34 +1,35 @@
-FROM ros:noetic-ros-base
-ENV DEBIAN_FRONTEND=noninteractive
+FROM ros:galactic-ros1-bridge
+# FROM ros:noetic-ros-base
+# ENV DEBIAN_FRONTEND=noninteractive
 
-# Install language
-RUN apt-get update && apt-get install -y \
-  locales \
-  && locale-gen en_US.UTF-8 \
-  && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
-  && rm -rf /var/lib/apt/lists/*
-ENV LANG en_US.UTF-8
+# # Install language
+# RUN apt-get update && apt-get install -y \
+#   locales \
+#   && locale-gen en_US.UTF-8 \
+#   && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+#   && rm -rf /var/lib/apt/lists/*
+# ENV LANG en_US.UTF-8
 
-# Install timezone
-RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
-  && export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update \
-  && apt-get install -y tzdata \
-  && dpkg-reconfigure --frontend noninteractive tzdata \
-  && rm -rf /var/lib/apt/lists/*
+# # Install timezone
+# RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
+#   && export DEBIAN_FRONTEND=noninteractive \
+#   && apt-get update \
+#   && apt-get install -y tzdata \
+#   && dpkg-reconfigure --frontend noninteractive tzdata \
+#   && rm -rf /var/lib/apt/lists/*
 
-# Install ROS2
-RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg2 \
-    lsb-release \
-    sudo \
-  && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-  && apt-get update && apt-get install -y \
-    ros-galactic-ros-base \
-    python3-argcomplete \
-  && rm -rf /var/lib/apt/lists/*
+# # Install ROS2
+# RUN apt-get update && apt-get install -y \
+#     curl \
+#     gnupg2 \
+#     lsb-release \
+#     sudo \
+#   && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+#   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+#   && apt-get update && apt-get install -y \
+#     ros-galactic-ros-base \
+#     python3-argcomplete \
+#   && rm -rf /var/lib/apt/lists/*
 
 ENV ROS_DISTRO=galactic
 ENV AMENT_PREFIX_PATH=/opt/ros/galactic
@@ -60,25 +61,29 @@ RUN groupadd --gid $USER_GID $USERNAME \
 ENV DEBIAN_FRONTEND=
 
 
-################
-# Expose the nvidia driver to allow opengl 
-# Dependencies for glvnd and X11.
-################
-RUN apt-get update \
- && apt-get install -y -qq --no-install-recommends \
-  libglvnd0 \
-  libgl1 \
-  libglx0 \
-  libegl1 \
-  libxext6 \
-  libx11-6
+# ################
+# # Expose the nvidia driver to allow opengl 
+# # Dependencies for glvnd and X11.
+# ################
+# RUN apt-get update \
+#  && apt-get install -y -qq --no-install-recommends \
+#   libglvnd0 \
+#   libgl1 \
+#   libglx0 \
+#   libegl1 \
+#   libxext6 \
+#   libx11-6
 
-# Env vars for the nvidia-container-runtime.
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
-ENV QT_X11_NO_MITSHM 1
+# # Env vars for the nvidia-container-runtime.
+# ENV NVIDIA_VISIBLE_DEVICES all
+# ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
+# ENV QT_X11_NO_MITSHM 1
 
 # Set up auto-source of workspace for ros user
 ARG WORKSPACE
 RUN echo "source /opt/ros/noetic/setup.bash" >> /home/ros/.bashrc
 RUN echo "if [ -f ${WORKSPACE}/install/setup.bash ]; then source ${WORKSPACE}/install/setup.bash; fi" >> /home/ros/.bashrc
+
+USER ros
+ENTRYPOINT [ "/bin/bash", "-i", "-c" ]
+CMD ["ros2 run ros1_bridge dynamic_bridge --bridge-all-1to2-topics"]
